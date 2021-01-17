@@ -2,7 +2,7 @@ import numpy as np
 
 
 def data_pattern_figure_layout(bg_color):
-    return {'margin': {'l': 30, 'r': 20, 'b': 30, 't': 20}, 'height': 100,
+    return {'margin': {'l': 30, 'r': 20, 'b': 30, 't': 20}, 'height': 100, 'width': 100,
             'plot_bgcolor': bg_color, 'paper_bgcolor': bg_color}
 
 
@@ -18,6 +18,21 @@ def tiny_plot(y_values, bg_color='white'):
             }
         }],
         'layout': data_pattern_figure_layout(bg_color=bg_color)
+    }
+    return figure_definition
+
+
+def normal_plot(y_values):
+    plot_axis = np.arange(len(y_values))
+
+    figure_definition = {
+        'data': [{
+            'x': plot_axis,
+            'y': y_values,
+            'line': {
+                'width': 3
+            }
+        }]
     }
     return figure_definition
 
