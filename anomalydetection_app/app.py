@@ -40,16 +40,13 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        dbc.Col([dcc.Graph(id='sin_graph', figure=plot_normalize_data_pattern(sin_data, xs),
-                           config={'staticPlot': True})], width=2),
-        dbc.Col([dcc.Graph(id='linear_graph', figure=plot_normalize_data_pattern(linear_data, xs),
-                           config={'staticPlot': True})], width=2),
+        dbc.Col([html.Div(dcc.Graph(id='sin_graph', config={'staticPlot': True}), id='sin_div')], width=2),
+        dbc.Col([html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div')], width=2),
         dbc.Col([dcc.Checklist(options=anomaly_detectors)], width=4)
     ], className='h-10'),
 
     dbc.Row([
-        dbc.Col([dcc.Graph(id='sin_cos_graph', figure=plot_normalize_data_pattern(sin_cos_data, xs),
-                           config={'staticPlot': True})], width=2)
+        dbc.Col([html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')], width=2)
     ], className='h-10'),
 
     dbc.Row([
@@ -58,7 +55,7 @@ app.layout = dbc.Container([
             dcc.Slider(id='noise_factor', value=0, min=0, max=1, step=1/1000, marks=noise_factor_slider_marks),
             dbc.Badge(id='noise_factor_slider')
         ], width=4)
-    ], className='h-10'),
+    ], className='h-15'),
 
     dbc.Row([
         dbc.Col([
@@ -83,6 +80,33 @@ app.layout = dbc.Container([
     ], className='h-10')
 
 ], style={"height": "100vh"})
+
+
+@app.callback(Output('sin_graph', 'figure'),
+              [Input('sin_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(sin_data, xs, n_clicks)
+
+
+@app.callback(Output('linear_graph', 'figure'),
+              [Input('linear_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(linear_data, xs, n_clicks)
+
+
+@app.callback(Output('sin_cos_graph', 'figure'),
+              [Input('sin_cos_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(sin_cos_data, xs, n_clicks)
+
+
+def update_graph_gb_color(data_function, x, n_clicks):
+    if n_clicks is None:
+        return plot_normalize_data_pattern(data_function, x, bg_color='gray')
+    if n_clicks % 2 == 0:
+        return plot_normalize_data_pattern(data_function, x, bg_color='gray')
+    if n_clicks % 2 == 1:
+        return plot_normalize_data_pattern(data_function, x, bg_color='white')
 
 
 @app.callback(Output('normal_noise_graph', 'figure'),
