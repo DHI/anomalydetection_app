@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 import os
 
-from plots import tiny_plot, plot_normalize_data_pattern
-from simulate import sin_data, sin_cos_data, linear_data
+from anomalydetection_app.plots import tiny_plot, plot_normalize_data_pattern
+from anomalydetection_app.simulate import sin_data, sin_cos_data, linear_data
 
 server = flask.Flask('app')
 server.secret_key = os.environ.get('secret_key', 'secret')
