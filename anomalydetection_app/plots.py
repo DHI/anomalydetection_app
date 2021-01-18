@@ -45,5 +45,6 @@ def plot_normalize_data_pattern(data_function, x, bg_color='white'):
 
 def normalize(data):
     data = (data - np.min(data))
-    data = data/(np.max(data)/2)
+    divide_value = np.max([np.max(data), 1e-9])/2
+    data = data/divide_value
     return data - 1
