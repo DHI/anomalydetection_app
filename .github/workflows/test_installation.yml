@@ -23,6 +23,6 @@ jobs:
     - name: Install anomalydetection_app
       run: |
         curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-        source $HOME/.poetry/env`
+        source $HOME/.poetry/env
         python -m pip install --upgrade pip
         poetry install .
