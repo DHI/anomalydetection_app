@@ -6,8 +6,8 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="anomalydetection_app",
     version='0.0.1',
-    install_requires=["dash>=1.18", "plotly>=4.14", "pandas>=1.1", "dash-bootstrap-components>=0.11",
-                      "anomalydetection", "numpy>=1.19"],
+    install_requires=["dash==1.18.1", "plotly==4.14.3", "pandas==1.2.0", "dash-bootstrap-components==0.11.1",
+                      "anomalydetection", "numpy==1.19.5"],
     dependency_links=["https://github.com/DHI/anomalydetection.git"],
     extras_require={
         "dev": ["pytest>=6.2.1"],
