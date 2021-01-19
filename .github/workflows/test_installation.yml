@@ -22,5 +22,6 @@ jobs:
         python-version: 3.7.8
     - name: Install anomalydetection_app
       run: |
+        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
         python -m pip install --upgrade pip
-        pip install .
+        poetry install .
