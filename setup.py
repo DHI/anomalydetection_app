@@ -7,7 +7,7 @@ setuptools.setup(
     name="anomalydetection_app",
     version='0.0.1',
     install_requires=["dash>=1.18.1", "plotly>=4.14.3", "pandas>=1.2.0", "dash-bootstrap-components>=0.11.1",
-                      "anomalydetection", "numpy>=1.19.5", "python_dateutil>=2.8.1"],
+                      "anomalydetection", "numpy>=1.19.5", "python_dateutil>=2.8.1", "MarkupSafe>=1.1.1"],
     dependency_links=["https://github.com/DHI/anomalydetection.git"],
     extras_require={
         "dev": ["pytest>=6.2.1"],
