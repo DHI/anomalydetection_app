@@ -19,8 +19,10 @@ jobs:
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.7.8
     - name: Install anomalydetection_app
       run: |
-        pip install --upgrade setuptools
-        pip install .
+        pip install --upgrade pip
+        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+        source $HOME/.poetry/env
+        poetry install
