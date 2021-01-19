@@ -22,5 +22,5 @@ jobs:
         python-version: 3.7
     - name: Install anomalydetection_app
       run: |
-        pip install --upgrade setuptools
+        pip install setuptools==51.3.1
         pip install .
