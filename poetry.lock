@@ -18,7 +18,7 @@ test = ["pytest (>=6.2.1)"]
 type = "git"
 url = "https://github.com/DHI/anomalydetection.git"
 reference = "main"
-resolved_reference = "eaad4f940a660943d451c227c91b35de196936f7"
+resolved_reference = "62ee3ed634f24d9a6f216e7fd785f88acc317e28"
 
 [[package]]
 name = "atomicwrites"
