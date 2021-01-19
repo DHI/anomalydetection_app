@@ -3,6 +3,7 @@ from dash.dependencies import Input, Output
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+from anomalydetection import detectors
 
 import flask
 import pandas as pd
@@ -27,7 +28,14 @@ noise_factor_slider_mark_locations = np.arange(0, 10)/10
 noise_factor_slider_mark_text = [str(item) for item in noise_factor_slider_mark_locations]
 noise_factor_slider_marks = dict(zip(noise_factor_slider_mark_locations, noise_factor_slider_mark_text))
 
-anomaly_detectors = [{'label': 'detector1', 'value': 31}, {'label': 'detector2', 'value': 33}]
+
+def checklist_option_from_object(object_input):
+    return {'label': str(object_input), 'value': object_input}
+
+
+anomaly_detectors = [checklist_option_from_object(detector) for detector in dir(detectors)
+                     if ('Detector' in detector) and ('Base' not in detector)]
+
 
 app = dash.Dash('app', server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -73,8 +81,7 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col(html.Div([dcc.Graph(id='exp_noise_graph', config={'staticPlot': True})], id='exp_noise_div'), width=2),
         dbc.Col(html.Div([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})],
-                         id='exp_cluster_noise_div'), width=2),
-        dbc.Col([dcc.Checklist(options=anomaly_detectors)], width=4)
+                         id='exp_cluster_noise_div'), width=2)
     ], className='h-10'),
 
     dbc.Row([
