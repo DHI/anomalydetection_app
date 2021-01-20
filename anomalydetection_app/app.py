@@ -55,8 +55,7 @@ app.layout = dbc.Container([
             html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div')
         ], width=2),
         dbc.Col([html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')], width=2),
-        dbc.Col([dcc.Graph(id='data_graph')], width=4),
-        dbc.Col([dcc.Checklist(options=anomaly_detectors, id='detectors_checklist')], width=4)
+        dbc.Col([dcc.Graph(id='data_graph')], width=8)
     ], className='h-10'),
 
     dbc.Row([
@@ -64,7 +63,9 @@ app.layout = dbc.Container([
             html.H3('Choose noise scale'),
             dcc.Slider(id='noise_factor', value=0, min=0, max=1, step=1/1000, marks=noise_factor_slider_marks),
             dbc.Badge(id='noise_factor_slider')
-        ], width=4)
+        ], width=4),
+        dbc.Col([dcc.Checklist(options=anomaly_detectors, id='detectors_checklist',
+                               inputStyle={"margin-right": "5px", "margin-left": "20px"})], width=8)
     ], className='h-15'),
 
     dbc.Row([
@@ -117,28 +118,29 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
         data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
 
     fig = go.Figure(normal_plot(data))
-    fig.update_layout(legend=dict(
-        yanchor="bottom",
-        y=1.05,
-        xanchor="left",
-        x=0.01
-    ))
+    fig.update_layout(legend=dict(yanchor="bottom", y=1.05, xanchor="left", x=0.01))
 
+    data_series = pd.Series(data)
+    test_first_index = int(np.floor(len(data)/2))
     if detector_selection is not None:
         for selected_detector in detector_selection:
-            detector_presence = [selected_detector == detector_option['label'] for detector_option in anomaly_detectors]
-            detector_index = np.where(detector_presence)[0][0]
-            current_detector = getattr(detectors, anomaly_detectors[detector_index]['value'])()
-            test_first_index = int(np.floor(len(data)/2))
-            data_series = pd.Series(data)
+            current_detector = instantiate_detector_instance(selected_detector)
             current_detector.fit(data_series[:test_first_index])
             anomalies = current_detector.detect(data_series)
+            x_axis = np.arange(len(data_series))[anomalies]
+            x_jitter = rng.uniform(-0.3, 0.3, size=len(x_axis))
             fig.add_trace(
-                go.Scatter(x=np.arange(len(data_series))[anomalies], y=data_series[anomalies],
-                           name=selected_detector, mode='markers'))
-
+                go.Scatter(x=x_axis + x_jitter, y=data_series[anomalies],
+                           name=selected_detector, mode='markers', marker={'opacity': 0.7, 'size': 10}))
 
     return fig
+
+
+def instantiate_detector_instance(selected_detector):
+    detector_presence = [selected_detector == detector_option['value'] for detector_option in anomaly_detectors]
+    detector_index = np.where(detector_presence)[0][0]
+    current_detector = getattr(detectors, anomaly_detectors[detector_index]['value'])()
+    return current_detector
 
 
 @app.callback(Output('sin_graph', 'figure'),
