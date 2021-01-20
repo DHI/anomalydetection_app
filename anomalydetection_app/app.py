@@ -127,13 +127,31 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
             current_detector = instantiate_detector_instance(selected_detector)
             current_detector.fit(data_series[:test_first_index])
             anomalies = current_detector.detect(data_series)
-            x_axis = np.arange(len(data_series))[anomalies]
-            x_jitter = rng.uniform(-0.3, 0.3, size=len(x_axis))
+            x_axis, y_axis = construct_x_and_y_anomaly_axes(anomalies, data_series)
             fig.add_trace(
-                go.Scatter(x=x_axis + x_jitter, y=data_series[anomalies],
+                go.Scatter(x=x_axis, y=y_axis,
                            name=selected_detector, mode='markers', marker={'opacity': 0.7, 'size': 10}))
 
+    fig.add_shape(type="line",
+                  x0=test_first_index, y0=data_series.min(), x1=test_first_index, y1=data_series.max(),
+                  line=dict(color="Black", width=3, dash="dot"), name='Test data start'
+                  )
+    fig.add_trace(go.Scatter(x=[test_first_index, test_first_index], y=[data_series.min(), data_series.max()],
+                             line=dict(color="Black", width=3, dash="dot"), name='Test data start'))
+
     return fig
+
+
+def construct_x_and_y_anomaly_axes(anomalies, data_series):
+    if np.sum(anomalies) > 0:
+        x_axis = np.arange(len(data_series))[anomalies]
+        x_jitter = rng.uniform(-0.3, 0.3, size=len(x_axis))
+        x_axis = x_axis + x_jitter
+        y_axis = data_series[anomalies]
+    else:
+        x_axis = [None]
+        y_axis = [None]
+    return x_axis, y_axis
 
 
 def instantiate_detector_instance(selected_detector):
