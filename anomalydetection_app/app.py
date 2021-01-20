@@ -4,6 +4,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 from anomalydetection import detectors
+from plotly import graph_objects as go
 
 import flask
 import pandas as pd
@@ -29,8 +30,8 @@ noise_factor_slider_mark_text = [str(item) for item in noise_factor_slider_mark_
 noise_factor_slider_marks = dict(zip(noise_factor_slider_mark_locations, noise_factor_slider_mark_text))
 
 
-def checklist_option_from_object(object_input):
-    return {'label': str(object_input), 'value': object_input}
+def checklist_option_from_object(detector_class_name):
+    return {'label': detector_class_name, 'value': detector_class_name}
 
 
 anomaly_detectors = [checklist_option_from_object(detector) for detector in dir(detectors)
@@ -55,7 +56,7 @@ app.layout = dbc.Container([
         ], width=2),
         dbc.Col([html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')], width=2),
         dbc.Col([dcc.Graph(id='data_graph')], width=4),
-        dbc.Col([dcc.Checklist(options=anomaly_detectors)], width=4)
+        dbc.Col([dcc.Checklist(options=anomaly_detectors, id='detectors_checklist')], width=4)
     ], className='h-10'),
 
     dbc.Row([
@@ -96,9 +97,9 @@ app.layout = dbc.Container([
               [Input('sin_div', 'n_clicks'), Input('sin_cos_div', 'n_clicks'), Input('linear_div', 'n_clicks'),
                Input('exp_noise_div', 'n_clicks'), Input('exp_cluster_noise_div', 'n_clicks'),
                Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
-               Input('noise_factor', 'value')])
+               Input('noise_factor', 'value'), Input('detectors_checklist', 'value')])
 def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp_cluster_noise_clicks,
-                normal_noise_clicks, time_point_noise_probability, noise_factor):
+                normal_noise_clicks, time_point_noise_probability, noise_factor, detector_selection):
     data = np.zeros(shape=len(xs))
     if is_selected_from_n_clicks(sin_clicks):
         data = data + sin_data(xs)
@@ -115,7 +116,29 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
     if is_selected_from_n_clicks(normal_noise_clicks):
         data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
 
-    return normal_plot(data)
+    fig = go.Figure(normal_plot(data))
+    fig.update_layout(legend=dict(
+        yanchor="bottom",
+        y=1.05,
+        xanchor="left",
+        x=0.01
+    ))
+
+    if detector_selection is not None:
+        for selected_detector in detector_selection:
+            detector_presence = [selected_detector == detector_option['label'] for detector_option in anomaly_detectors]
+            detector_index = np.where(detector_presence)[0][0]
+            current_detector = getattr(detectors, anomaly_detectors[detector_index]['value'])()
+            test_first_index = int(np.floor(len(data)/2))
+            data_series = pd.Series(data)
+            current_detector.fit(data_series[:test_first_index])
+            anomalies = current_detector.detect(data_series)
+            fig.add_trace(
+                go.Scatter(x=np.arange(len(data_series))[anomalies], y=data_series[anomalies],
+                           name=selected_detector, mode='markers'))
+
+
+    return fig
 
 
 @app.callback(Output('sin_graph', 'figure'),
@@ -203,7 +226,8 @@ def exponentially_distributed_cluster_noise(this_x, time_point_noise_probability
     noise = np.zeros(len(this_x))
     if time_point_noise_probability > 0:
         anomaly_locations = get_anomaly_locations(this_x, time_point_noise_probability)
-        final_locations = construct_clustered_anomalies(anomaly_locations, half_cluster=int(np.floor(cluster_size / 2)))
+        final_locations = construct_clustered_anomalies(this_x, anomaly_locations,
+                                                        half_cluster=int(np.floor(cluster_size / 2)))
         noise[final_locations] = 1
     return noise
 
@@ -215,12 +239,12 @@ def get_anomaly_locations(x, time_point_noise_probability):
     return anomaly_locations
 
 
-def construct_clustered_anomalies(anomaly_locations, half_cluster):
+def construct_clustered_anomalies(x, anomaly_locations, half_cluster):
     final_locations = []
     for location in anomaly_locations:
         append_locations_in_cluster(final_locations, half_cluster, location)
     final_locations = np.array(final_locations, dtype=int)
-    final_locations = final_locations[(final_locations >= 0) & (final_locations < len(noise_xs))]
+    final_locations = final_locations[(final_locations >= 0) & (final_locations < len(x))]
     return final_locations
 
 
