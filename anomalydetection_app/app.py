@@ -1,5 +1,5 @@
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
@@ -197,11 +197,33 @@ def is_selected_from_n_clicks(n_clicks):
 
 
 @app.callback(Output('normal_noise_graph', 'figure'),
-              [Input('noise_probability', 'value'), Input('noise_factor', 'value'), Input('normal_noise_div',
-                                                                                          'n_clicks')])
-def update_normal_noise_graph(time_point_noise_probability, noise_factor, n_clicks):
+              [Input('noise_probability', 'value'), Input('noise_factor', 'value'),
+               Input('normal_noise_div', 'n_clicks')], State('normal_noise_graph', 'figure'))
+def update_normal_noise_graph(time_point_noise_probability, noise_factor, n_clicks, current_figure):
+    ctx = dash.callback_context
+    if list_contains_value_in_dict(ctx.triggered, 'prop_id', 'normal_noise_div.n_clicks'):
+        return switch_background_color(current_figure)
     noise = normal_noise_per_time_point(noise_factor, noise_xs, time_point_noise_probability)
+
     return noise_plot_selected_color(n_clicks, noise)
+
+
+def switch_background_color(current_figure):
+    current_layout = current_figure['layout']
+    new_layout = current_layout
+    if current_layout['plot_bgcolor'] == 'gray':
+        new_layout['plot_bgcolor'] = 'white'
+        new_layout['paper_bgcolor'] = 'white'
+    else:
+        new_layout['plot_bgcolor'] = 'gray'
+        new_layout['paper_bgcolor'] = 'gray'
+    current_figure['layout'] = new_layout
+    return current_figure
+
+
+def list_contains_value_in_dict(list_of_dicts, key_to_inspect, value_sought):
+    valid_items = [item for item in list_of_dicts if item[key_to_inspect] == value_sought]
+    return len(valid_items) > 0
 
 
 def normal_noise_per_time_point(noise_factor, this_x, time_point_noise_probability):
