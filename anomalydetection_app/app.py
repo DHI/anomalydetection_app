@@ -118,6 +118,7 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
         data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
 
     fig = go.Figure(normal_plot(data))
+    fig.data[0].name = 'Simulated data'
     fig.update_layout(legend=dict(yanchor="bottom", y=1.05, xanchor="left", x=0.01))
 
     data_series = pd.Series(data)
