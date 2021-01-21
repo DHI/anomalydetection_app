@@ -34,9 +34,9 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        dbc.Col([dcc.RadioItems(options=[{'label': 'Upload data', 'value': 'upload'},
-                                         {'label': 'Generate data', 'value': 'generate'}], id='data_source',
-                                inputStyle={"margin-right": "5px", "margin-left": "20px"})], width=4),
+        dbc.Col([dcc.RadioItems(options=[{'label': 'Use uploaded data', 'value': 'upload'},
+                                         {'label': 'Use generated data', 'value': 'generate'}], id='data_source',
+                                inputStyle={"margin-right": "5px", "margin-left": "20px"}, value='generate')], width=4),
         dbc.Col([dcc.Upload(id='upload_data', multiple=False,
                             children=html.Div(['Click here to upload data']),
                             style={'width': '100%', 'height': '30px', 'lineHeight': '30px', 'borderWidth': '1px',
@@ -118,27 +118,22 @@ app.layout = dbc.Container([
 ], style={"height": "100vh"})
 
 
-@app.callback(Output('data-columns', 'options'), Input('uploaded_data_div', 'children'))
-def populate_column_selection(selected_data):
-    df = pd.read_json(selected_data)
-    if len(df.columns) > 0:
-        options = [{'label': col, 'value': col} for col in df.columns]
-        return options
-    return []
-
-
-@app.callback(Output('uploaded_data_div', 'children'), Input('upload_data', 'contents'),
-              State('upload_data', 'filename'))
+@app.callback([Output('uploaded_data_div', 'children'), Output('data-columns', 'options')],
+              Input('upload_data', 'contents'), State('upload_data', 'filename'))
 def insert_chosen_filename_under_upload_box(upload_contents, file_name):
     if upload_contents is None:
-        return pd.DataFrame().to_json()
+        return pd.DataFrame().to_json(), []
     content_type, content_string = upload_contents.split(',')
     decoded = base64.b64decode(content_string)
+    df = pd.DataFrame()
+    options = []
     if 'parquet' in file_name:
-        return pd.read_parquet(io.BytesIO(decoded)).to_json()
+        df = pd.read_parquet(io.BytesIO(decoded))
     if 'csv' in file_name:
-        return pd.read_csv(io.StringIO(decoded.decode('utf-8'))).to_json()
-    return 'Error: file could not be read'
+        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+    if len(df.columns) > 0:
+        options = [{'label': col, 'value': col} for col in df.columns]
+    return df.to_json(), options
 
 
 @app.callback(Output('output-data-upload', 'children'), Input('upload_data', 'filename'))
@@ -163,20 +158,28 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
                 data_as_json, column_to_plot, current_figure):
     ctx = dash.callback_context
     detector_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'detectors_checklist.value')
+    column_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'data-columns.value')
 
+    data_label = 'Simulated data'
+    use_generated_data = (data_source == 'generate') or (column_to_plot is None)
     if not detector_selection_triggered:
-        if (data_source is None) or (data_source == 'generate') or (column_to_plot is None):
-            data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
-            data = normalize(data)
-            data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
-                                     time_point_noise_probability)
+        if use_generated_data:
+            if column_selection_triggered:
+                data = current_figure['data'][0]['y']
+            else:
+                data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
+                data = normalize(data)
+                data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor,
+                                         normal_noise_clicks, time_point_noise_probability)
         else:
             data = pd.read_json(data_as_json)[column_to_plot]
+            data_label = 'Uploaded data'
     else:
         data = current_figure['data'][0]['y']
 
-    fig = go.Figure(normal_plot(data))
-    setattr(fig.data[0], 'name', 'Simulated data')
+    figure_definition = normal_plot(data)
+    figure_definition['data'][0]['name'] = data_label
+    fig = go.Figure(figure_definition)
     fig.update_layout(legend=dict(yanchor="bottom", y=1.05, xanchor="left", x=0.01))
 
     data_series = pd.Series(data)
