@@ -84,13 +84,19 @@ app.layout = dbc.Container([
               [Input('sin_div', 'n_clicks'), Input('sin_cos_div', 'n_clicks'), Input('linear_div', 'n_clicks'),
                Input('exp_noise_div', 'n_clicks'), Input('exp_cluster_noise_div', 'n_clicks'),
                Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
-               Input('noise_factor', 'value'), Input('detectors_checklist', 'value')])
+               Input('noise_factor', 'value'), Input('detectors_checklist', 'value')], State('data_graph', 'figure'))
 def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp_cluster_noise_clicks,
-                normal_noise_clicks, time_point_noise_probability, noise_factor, detector_selection):
-    data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
-    data = normalize(data)
-    data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
-                             time_point_noise_probability)
+                normal_noise_clicks, time_point_noise_probability, noise_factor, detector_selection, current_figure):
+    ctx = dash.callback_context
+    detector_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'detectors_checklist.value')
+
+    if not detector_selection_triggered:
+        data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
+        data = normalize(data)
+        data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
+                                 time_point_noise_probability)
+    else:
+        data = current_figure['data'][0]['y']
 
     fig = go.Figure(normal_plot(data))
     setattr(fig.data[0], 'name', 'Simulated data')
