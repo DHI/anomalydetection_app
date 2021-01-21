@@ -29,16 +29,22 @@ app.layout = dbc.Container([
     dbc.Row([html.H1('Experiment with anomaly detection')]),
 
     dbc.Row([
-        dbc.Col([html.H3('Choose underlying data pattern')], width=4)
-    ]),
-
-    dbc.Row([
+        dbc.Col([html.H3('Choose underlying data pattern')], width=6),
+        dbc.Col([html.Div()], width=6),
         dbc.Col([
             html.Div(dcc.Graph(id='sin_graph', config={'staticPlot': True}), id='sin_div'),
             html.Br(),
-            html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div')
+            html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div'),
+            html.Br(),
+            html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')
         ], width=2),
-        dbc.Col([html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')], width=2),
+        dbc.Col([
+            html.Div(),
+            html.Br(),
+            html.Div(),
+            html.Br(),
+            html.Div()
+        ], width=2),
         dbc.Col([dcc.Graph(id='data_graph')], width=8)
     ], className='h-10'),
 
@@ -67,15 +73,15 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        dbc.Col(html.Div([dcc.Graph(id='exp_noise_graph', config={'staticPlot': True})], id='exp_noise_div'), width=2),
-        dbc.Col(html.Div([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})],
-                         id='exp_cluster_noise_div'), width=2)
+        dbc.Col([
+            html.Div([dcc.Graph(id='exp_noise_graph', config={'staticPlot': True})], id='exp_noise_div'),
+            html.Br(),
+            html.Div([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})],
+                     id='exp_cluster_noise_div'),
+            html.Br(),
+            html.Div([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], id='normal_noise_div')
+        ], width=2),
     ], className='h-10'),
-
-    dbc.Row([
-        dbc.Col(html.Div([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], id='normal_noise_div'),
-                width=2)
-    ], className='h-10')
 
 ], style={"height": "100vh"})
 
