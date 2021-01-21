@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 import os
 
-from anomalydetection_app.plots import tiny_plot, plot_normalize_data_pattern
+from anomalydetection_app.plots import tiny_plot, plot_normalize_data_pattern, normal_plot, normalize
 from anomalydetection_app.simulate import sin_data, sin_cos_data, linear_data
 
 server = flask.Flask('app')
@@ -40,16 +40,14 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        dbc.Col([dcc.Graph(id='sin_graph', figure=plot_normalize_data_pattern(sin_data, xs),
-                           config={'staticPlot': True})], width=2),
-        dbc.Col([dcc.Graph(id='linear_graph', figure=plot_normalize_data_pattern(linear_data, xs),
-                           config={'staticPlot': True})], width=2),
+        dbc.Col([
+            html.Div(dcc.Graph(id='sin_graph', config={'staticPlot': True}), id='sin_div'),
+            html.Br(),
+            html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div')
+        ], width=2),
+        dbc.Col([html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')], width=2),
+        dbc.Col([dcc.Graph(id='data_graph')], width=4),
         dbc.Col([dcc.Checklist(options=anomaly_detectors)], width=4)
-    ], className='h-10'),
-
-    dbc.Row([
-        dbc.Col([dcc.Graph(id='sin_cos_graph', figure=plot_normalize_data_pattern(sin_cos_data, xs),
-                           config={'staticPlot': True})], width=2)
     ], className='h-10'),
 
     dbc.Row([
@@ -58,7 +56,7 @@ app.layout = dbc.Container([
             dcc.Slider(id='noise_factor', value=0, min=0, max=1, step=1/1000, marks=noise_factor_slider_marks),
             dbc.Badge(id='noise_factor_slider')
         ], width=4)
-    ], className='h-10'),
+    ], className='h-15'),
 
     dbc.Row([
         dbc.Col([
@@ -73,50 +71,134 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        dbc.Col([dcc.Graph(id='exp_noise_graph', config={'staticPlot': True})], width=2),
-        dbc.Col([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})], width=2),
+        dbc.Col(html.Div([dcc.Graph(id='exp_noise_graph', config={'staticPlot': True})], id='exp_noise_div'), width=2),
+        dbc.Col(html.Div([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})],
+                         id='exp_cluster_noise_div'), width=2),
         dbc.Col([dcc.Checklist(options=anomaly_detectors)], width=4)
     ], className='h-10'),
 
     dbc.Row([
-        dbc.Col([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], width=2)
+        dbc.Col(html.Div([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], id='normal_noise_div'),
+                width=2)
     ], className='h-10')
 
 ], style={"height": "100vh"})
 
 
-@app.callback(Output('normal_noise_graph', 'figure'),
-              [Input('noise_probability', 'value'), Input('noise_factor', 'value')])
-def update_normal_noise_graph(time_point_noise_probability, noise_factor):
-    noise = add_normal_noise_to_series(np.zeros(len(noise_xs)), noise_factor)
-    noise_locations = rng.uniform(size=len(noise_xs)) <= time_point_noise_probability
+@app.callback(Output('data_graph', 'figure'),
+              [Input('sin_div', 'n_clicks'), Input('sin_cos_div', 'n_clicks'), Input('linear_div', 'n_clicks'),
+               Input('exp_noise_div', 'n_clicks'), Input('exp_cluster_noise_div', 'n_clicks'),
+               Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
+               Input('noise_factor', 'value')])
+def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp_cluster_noise_clicks,
+                normal_noise_clicks, time_point_noise_probability, noise_factor):
+    data = np.zeros(shape=len(xs))
+    if is_selected_from_n_clicks(sin_clicks):
+        data = data + sin_data(xs)
+    if is_selected_from_n_clicks(sin_cos_clicks):
+        data = data + sin_cos_data(xs)
+    if is_selected_from_n_clicks(linear_clicks):
+        data = data + linear_data(xs)
 
-    return tiny_plot(noise * noise_locations)
+    data = normalize(data)
+    if is_selected_from_n_clicks(exp_noise_clicks):
+        data = data + exponentially_distributed_noise(xs, time_point_noise_probability)
+    if is_selected_from_n_clicks(exp_cluster_noise_clicks):
+        data = data + exponentially_distributed_cluster_noise(xs, time_point_noise_probability)
+    if is_selected_from_n_clicks(normal_noise_clicks):
+        data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
+
+    return normal_plot(data)
+
+
+@app.callback(Output('sin_graph', 'figure'),
+              [Input('sin_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(sin_data, xs, n_clicks)
+
+
+@app.callback(Output('linear_graph', 'figure'),
+              [Input('linear_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(linear_data, xs, n_clicks)
+
+
+@app.callback(Output('sin_cos_graph', 'figure'),
+              [Input('sin_cos_div', 'n_clicks')])
+def update_sin_graph(n_clicks):
+    return update_graph_gb_color(sin_cos_data, xs, n_clicks)
+
+
+def update_graph_gb_color(data_function, x, n_clicks):
+    if not is_selected_from_n_clicks(n_clicks):
+        return plot_normalize_data_pattern(data_function, x, bg_color='gray')
+    else:
+        return plot_normalize_data_pattern(data_function, x, bg_color='white')
+
+
+def is_selected_from_n_clicks(n_clicks):
+    if n_clicks is None:
+        return False
+    if n_clicks % 2 == 0:
+        return False
+    if n_clicks % 2 == 1:
+        return True
+
+
+@app.callback(Output('normal_noise_graph', 'figure'),
+              [Input('noise_probability', 'value'), Input('noise_factor', 'value'), Input('normal_noise_div',
+                                                                                          'n_clicks')])
+def update_normal_noise_graph(time_point_noise_probability, noise_factor, n_clicks):
+    noise = normal_noise_per_time_point(noise_factor, noise_xs, time_point_noise_probability)
+    return noise_plot_selected_color(n_clicks, noise)
+
+
+def normal_noise_per_time_point(noise_factor, this_x, time_point_noise_probability):
+    noise = add_normal_noise_to_series(np.zeros(len(this_x)), noise_factor)
+    noise_locations = rng.uniform(size=len(this_x)) <= time_point_noise_probability
+    noise = noise * noise_locations
+    return noise
 
 
 @app.callback(Output('exp_noise_graph', 'figure'),
-              [Input('noise_probability', 'value')])
-def update_exp_noise_graph(time_point_noise_probability):
-    noise = np.zeros(len(noise_xs))
-    if time_point_noise_probability > 0:
-        anomaly_locations = get_anomaly_locations(noise_xs, time_point_noise_probability)
-        noise[anomaly_locations] = 1
+              [Input('noise_probability', 'value'), Input('exp_noise_div', 'n_clicks')])
+def update_exp_noise_graph(time_point_noise_probability, n_clicks):
+    noise = exponentially_distributed_noise(noise_xs, time_point_noise_probability)
+    return noise_plot_selected_color(n_clicks, noise)
 
-    return tiny_plot(noise)
+
+def exponentially_distributed_noise(this_x, time_point_noise_probability):
+    noise = np.zeros(len(this_x))
+    if time_point_noise_probability > 0:
+        anomaly_locations = get_anomaly_locations(this_x, time_point_noise_probability)
+        noise[anomaly_locations] = 1
+    return noise
+
+
+def noise_plot_selected_color(n_clicks, noise):
+    if not is_selected_from_n_clicks(n_clicks):
+        return tiny_plot(noise, bg_color='gray')
+    else:
+        return tiny_plot(noise, bg_color='white')
 
 
 @app.callback(Output('exp_cluster_noise_graph', 'figure'),
-              [Input('noise_probability', 'value')])
-def update_exp_cluster_noise_graph(time_point_noise_probability):
-    cluster_size = 5
-    time_point_noise_probability = time_point_noise_probability/cluster_size
-    noise = np.zeros(len(noise_xs))
-    if time_point_noise_probability > 0:
-        anomaly_locations = get_anomaly_locations(noise_xs, time_point_noise_probability)
-        final_locations = construct_clustered_anomalies(anomaly_locations, half_cluster=int(np.floor(cluster_size/2)))
-        noise[final_locations] = 1
+              [Input('noise_probability', 'value'), Input('exp_cluster_noise_div', 'n_clicks')])
+def update_exp_cluster_noise_graph(time_point_noise_probability, n_clicks):
+    noise = exponentially_distributed_cluster_noise(noise_xs, time_point_noise_probability)
 
-    return tiny_plot(noise)
+    return noise_plot_selected_color(n_clicks, noise)
+
+
+def exponentially_distributed_cluster_noise(this_x, time_point_noise_probability):
+    cluster_size = 5
+    time_point_noise_probability = time_point_noise_probability / cluster_size
+    noise = np.zeros(len(this_x))
+    if time_point_noise_probability > 0:
+        anomaly_locations = get_anomaly_locations(this_x, time_point_noise_probability)
+        final_locations = construct_clustered_anomalies(anomaly_locations, half_cluster=int(np.floor(cluster_size / 2)))
+        noise[final_locations] = 1
+    return noise
 
 
 def get_anomaly_locations(x, time_point_noise_probability):
