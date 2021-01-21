@@ -45,7 +45,7 @@ app.layout = dbc.Container([
         dbc.Col([html.Div(id='output-data-upload')], width=4),
         dbc.Col(html.Div(''), width=4),
         dbc.Col([html.Div('Select column to inspect for anomalies')], width=4),
-        dbc.Col([html.Div(id='data-columns')], width=4)
+        dbc.Col([dcc.Dropdown(id='data-columns')], width=4)
 
     ]),
 
@@ -118,13 +118,13 @@ app.layout = dbc.Container([
 ], style={"height": "100vh"})
 
 
-@app.callback(Output('data-columns', 'children'), Input('uploaded_data_div', 'children'))
+@app.callback(Output('data-columns', 'options'), Input('uploaded_data_div', 'children'))
 def populate_column_selection(selected_data):
     df = pd.read_json(selected_data)
     if len(df.columns) > 0:
         options = [{'label': col, 'value': col} for col in df.columns]
-        return dcc.Dropdown(options=options, value=df.columns[0])
-    return dcc.Dropdown()
+        return options
+    return []
 
 
 @app.callback(Output('uploaded_data_div', 'children'), Input('upload_data', 'contents'),
@@ -141,8 +141,7 @@ def insert_chosen_filename_under_upload_box(upload_contents, file_name):
     return 'Error: file could not be read'
 
 
-@app.callback(Output('output-data-upload', 'children'),
-              Input('upload_data', 'filename'))
+@app.callback(Output('output-data-upload', 'children'), Input('upload_data', 'filename'))
 def insert_chosen_filename_under_upload_box(file_name):
     if file_name is None:
         return 'No file selected'
@@ -153,17 +152,26 @@ def insert_chosen_filename_under_upload_box(file_name):
               [Input('sin_div', 'n_clicks'), Input('sin_cos_div', 'n_clicks'), Input('linear_div', 'n_clicks'),
                Input('exp_noise_div', 'n_clicks'), Input('exp_cluster_noise_div', 'n_clicks'),
                Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
-               Input('noise_factor', 'value'), Input('detectors_checklist', 'value')], State('data_graph', 'figure'))
-def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp_cluster_noise_clicks,
-                normal_noise_clicks, time_point_noise_probability, noise_factor, detector_selection, current_figure):
+               Input('noise_factor', 'value'), Input('detectors_checklist', 'value'),
+               Input('data_source', 'value')],
+              Input('uploaded_data_div', 'children'), Input('data-columns', 'value'), State('data_graph', 'figure'))
+def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
+                exp_noise_clicks, exp_cluster_noise_clicks,
+                normal_noise_clicks, time_point_noise_probability,
+                noise_factor, detector_selection,
+                data_source,
+                data_as_json, column_to_plot, current_figure):
     ctx = dash.callback_context
     detector_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'detectors_checklist.value')
 
     if not detector_selection_triggered:
-        data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
-        data = normalize(data)
-        data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
-                                 time_point_noise_probability)
+        if (data_source is None) or (data_source == 'generate') or (column_to_plot is None):
+            data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
+            data = normalize(data)
+            data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
+                                     time_point_noise_probability)
+        else:
+            data = pd.read_json(data_as_json)[column_to_plot]
     else:
         data = current_figure['data'][0]['y']
 
