@@ -26,9 +26,9 @@
 
 
 ## About The Project
+![image](anomalydetection_app/assets/demo.png)
 
-[![Anomaly Detection App Screen Shot][app_demo]](anomalydetection_app/assets/demo.png)
-Dash app to explore anomaly detection for time series data.
+This project defines a Dash app to explore anomaly detection for time series data.
 
 The app allows you to 
 * select which data patterns and types of noise to simulate
