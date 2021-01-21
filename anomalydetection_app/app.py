@@ -13,22 +13,14 @@ from anomalydetection_app.helpers import instantiate_detector_instance, list_con
     get_anomaly_detectors
 from anomalydetection_app.plots import normal_plot, normalize, \
     switch_background_color, update_graph_gb_color, is_selected_from_n_clicks, construct_x_and_y_anomaly_axes, \
-    noise_plot_selected_color
+    noise_plot_selected_color, get_marks_on_slider
 from anomalydetection_app.simulate import sin_data, sin_cos_data, linear_data, normal_noise_per_time_point, \
     exponentially_distributed_noise, exponentially_distributed_cluster_noise
 
 server = flask.Flask('app')
-minutes_per_day = 24*60
-
 
 noise_xs = np.arange(100)
-
-index = pd.date_range(start='14-01-2021 00:00', periods=2*minutes_per_day, freq='T')
-xs = np.array(list(range(len(index))))
-
-noise_factor_slider_mark_locations = np.arange(0, 10)/10
-noise_factor_slider_mark_text = [str(item) for item in noise_factor_slider_mark_locations]
-noise_factor_slider_marks = dict(zip(noise_factor_slider_mark_locations, noise_factor_slider_mark_text))
+xs = np.arange(3000)
 
 app = dash.Dash('app', server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -53,7 +45,8 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H3('Choose noise scale'),
-            dcc.Slider(id='noise_factor', value=0, min=0, max=1, step=1/1000, marks=noise_factor_slider_marks),
+            dcc.Slider(id='noise_factor', value=0, min=0, max=1, step=1/1000,
+                       marks=get_marks_on_slider(number_of_marks_in_0_1_interval=10)),
             dbc.Badge(id='noise_factor_slider')
         ], width=4),
         dbc.Col([dcc.Checklist(options=get_anomaly_detectors(), id='detectors_checklist',
@@ -63,7 +56,8 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H3('Choose noise probability'),
-            dcc.Slider(id='noise_probability', value=0.1, min=0, max=1, step=1/1000, marks=noise_factor_slider_marks),
+            dcc.Slider(id='noise_probability', value=0.1, min=0, max=1, step=1/1000,
+                       marks=get_marks_on_slider(number_of_marks_in_0_1_interval=10)),
             dbc.Badge(id='noise_probability_slider')
         ], width=4)
     ], className='h-10'),
@@ -110,7 +104,7 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
         data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
 
     fig = go.Figure(normal_plot(data))
-    fig.data[0].name = 'Simulated data'
+    setattr(fig.data[0], 'name', 'Simulated data')
     fig.update_layout(legend=dict(yanchor="bottom", y=1.05, xanchor="left", x=0.01))
 
     data_series = pd.Series(data)

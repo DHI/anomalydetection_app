@@ -98,3 +98,10 @@ def noise_plot_selected_color(n_clicks, noise):
         return tiny_plot(noise, bg_color='gray')
     else:
         return tiny_plot(noise, bg_color='white')
+
+
+def get_marks_on_slider(number_of_marks_in_0_1_interval):
+    noise_factor_slider_mark_locations = np.arange(0, number_of_marks_in_0_1_interval) / number_of_marks_in_0_1_interval
+    noise_factor_slider_mark_text = [str(item) for item in noise_factor_slider_mark_locations]
+    noise_factor_slider_marks = dict(zip(noise_factor_slider_mark_locations, noise_factor_slider_mark_text))
+    return noise_factor_slider_marks
