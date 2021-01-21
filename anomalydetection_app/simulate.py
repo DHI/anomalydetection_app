@@ -1,5 +1,7 @@
 import numpy as np
 
+from anomalydetection_app.inspect_element import is_selected_from_n_clicks
+
 rng = np.random.default_rng()
 
 
@@ -71,3 +73,25 @@ def append_locations_in_cluster(final_locations, half_cluster, location):
 def add_normal_noise_to_series(series, noise_factor):
     len_series = len(series)
     return series + rng.normal(scale=noise_factor, size=len_series)
+
+
+def add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
+                      time_point_noise_probability):
+    if is_selected_from_n_clicks(exp_noise_clicks):
+        data = data + exponentially_distributed_noise(data, time_point_noise_probability)
+    if is_selected_from_n_clicks(exp_cluster_noise_clicks):
+        data = data + exponentially_distributed_cluster_noise(data, time_point_noise_probability)
+    if is_selected_from_n_clicks(normal_noise_clicks):
+        data = data + normal_noise_per_time_point(noise_factor, data, time_point_noise_probability)
+    return data
+
+
+def simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks):
+    data = np.zeros(shape=len(xs))
+    if is_selected_from_n_clicks(sin_clicks):
+        data = data + sin_data(xs)
+    if is_selected_from_n_clicks(sin_cos_clicks):
+        data = data + sin_cos_data(xs)
+    if is_selected_from_n_clicks(linear_clicks):
+        data = data + linear_data(xs)
+    return data

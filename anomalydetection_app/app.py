@@ -12,10 +12,10 @@ import numpy as np
 from anomalydetection_app.helpers import instantiate_detector_instance, list_contains_value_in_dict, \
     get_anomaly_detectors
 from anomalydetection_app.plots import normal_plot, normalize, \
-    switch_background_color, update_graph_gb_color, is_selected_from_n_clicks, construct_x_and_y_anomaly_axes, \
+    switch_background_color, update_graph_gb_color, construct_x_and_y_anomaly_axes, \
     noise_plot_selected_color, get_marks_on_slider
 from anomalydetection_app.simulate import sin_data, sin_cos_data, linear_data, normal_noise_per_time_point, \
-    exponentially_distributed_noise, exponentially_distributed_cluster_noise
+    exponentially_distributed_noise, exponentially_distributed_cluster_noise, add_noise_to_data, simulate_data_pattern
 
 server = flask.Flask('app')
 
@@ -87,21 +87,10 @@ app.layout = dbc.Container([
                Input('noise_factor', 'value'), Input('detectors_checklist', 'value')])
 def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp_cluster_noise_clicks,
                 normal_noise_clicks, time_point_noise_probability, noise_factor, detector_selection):
-    data = np.zeros(shape=len(xs))
-    if is_selected_from_n_clicks(sin_clicks):
-        data = data + sin_data(xs)
-    if is_selected_from_n_clicks(sin_cos_clicks):
-        data = data + sin_cos_data(xs)
-    if is_selected_from_n_clicks(linear_clicks):
-        data = data + linear_data(xs)
-
+    data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
     data = normalize(data)
-    if is_selected_from_n_clicks(exp_noise_clicks):
-        data = data + exponentially_distributed_noise(xs, time_point_noise_probability)
-    if is_selected_from_n_clicks(exp_cluster_noise_clicks):
-        data = data + exponentially_distributed_cluster_noise(xs, time_point_noise_probability)
-    if is_selected_from_n_clicks(normal_noise_clicks):
-        data = data + normal_noise_per_time_point(noise_factor, xs, time_point_noise_probability)
+    data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor, normal_noise_clicks,
+                             time_point_noise_probability)
 
     fig = go.Figure(normal_plot(data))
     setattr(fig.data[0], 'name', 'Simulated data')
@@ -119,10 +108,6 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks, exp_noise_clicks, exp
                 go.Scatter(x=x_axis, y=y_axis,
                            name=selected_detector, mode='markers', marker={'opacity': 0.7, 'size': 10}))
 
-    fig.add_shape(type="line",
-                  x0=test_first_index, y0=data_series.min(), x1=test_first_index, y1=data_series.max(),
-                  line=dict(color="Black", width=3, dash="dot"), name='Test data start'
-                  )
     fig.add_trace(go.Scatter(x=[test_first_index, test_first_index], y=[data_series.min(), data_series.max()],
                              line=dict(color="Black", width=3, dash="dot"), name='Test data start'))
 

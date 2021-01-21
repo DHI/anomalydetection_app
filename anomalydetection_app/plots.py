@@ -1,5 +1,6 @@
 import numpy as np
 
+from anomalydetection_app.inspect_element import is_selected_from_n_clicks
 from anomalydetection_app.simulate import rng
 
 
@@ -70,15 +71,6 @@ def update_graph_gb_color(data_function, x, n_clicks):
         return plot_normalize_data_pattern(data_function, x, bg_color='gray')
     else:
         return plot_normalize_data_pattern(data_function, x, bg_color='white')
-
-
-def is_selected_from_n_clicks(n_clicks):
-    if n_clicks is None:
-        return False
-    if n_clicks % 2 == 0:
-        return False
-    if n_clicks % 2 == 1:
-        return True
 
 
 def construct_x_and_y_anomaly_axes(anomalies, data_series):
