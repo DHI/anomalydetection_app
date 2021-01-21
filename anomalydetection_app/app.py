@@ -5,6 +5,8 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from plotly import graph_objects as go
 
+import base64
+
 import flask
 import pandas as pd
 import numpy as np
@@ -35,9 +37,21 @@ app.layout = dbc.Container([
             dcc.RadioItems(options=[{'label': 'Upload data', 'value': 'upload'},
                                     {'label': 'Generate data', 'value': 'generate'}], id='data_source',
                            inputStyle={"margin-right": "5px", "margin-left": "20px"}),
-            dcc.Upload(id='upload_data')
-        ])
+            dcc.Upload(id='upload_data', multiple=False,
+                       children=html.Div(['Select data file to read data from if you chose to upload data']),
+                       style={'width': '100%',
+                              'height': '60px',
+                              'lineHeight': '60px',
+                              'borderWidth': '1px',
+                              'borderStyle': 'dashed',
+                              'borderRadius': '5px',
+                              'textAlign': 'center',
+                              'margin': '10px'
+                              }), html.Div(id='output-data-upload')
+        ], width=12)
     ]),
+
+    html.Hr(),
 
     dbc.Row([
         dbc.Col([html.H3('Choose underlying data pattern')], width=6),
@@ -102,6 +116,16 @@ app.layout = dbc.Container([
     ], className='h-10'),
 
 ], style={"height": "100vh"})
+
+
+@app.callback(Output('output-data-upload', 'children'), Input('upload_data', 'contents'),
+              State('upload_data', 'filename'))
+def insert_chosen_filename_in_upload_box(upload_contents, file_name):
+    if upload_contents is None:
+        return 'No file selected'
+    content_type, content_string = upload_contents.split(',')
+    decoded = base64.b64decode(content_string)
+    return 'hello'
 
 
 @app.callback(Output('data_graph', 'figure'),
