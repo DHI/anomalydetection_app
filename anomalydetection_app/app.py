@@ -1,3 +1,5 @@
+import io
+
 import dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
@@ -32,23 +34,19 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        dbc.Col([
-            html.H2('Choose whether you want to simulate data or upload your own'),
-            dcc.RadioItems(options=[{'label': 'Upload data', 'value': 'upload'},
-                                    {'label': 'Generate data', 'value': 'generate'}], id='data_source',
-                           inputStyle={"margin-right": "5px", "margin-left": "20px"}),
-            dcc.Upload(id='upload_data', multiple=False,
-                       children=html.Div(['Select data file to read data from if you chose to upload data']),
-                       style={'width': '100%',
-                              'height': '60px',
-                              'lineHeight': '60px',
-                              'borderWidth': '1px',
-                              'borderStyle': 'dashed',
-                              'borderRadius': '5px',
-                              'textAlign': 'center',
-                              'margin': '10px'
-                              }), html.Div(id='output-data-upload')
-        ], width=12)
+        dbc.Col([dcc.RadioItems(options=[{'label': 'Upload data', 'value': 'upload'},
+                                         {'label': 'Generate data', 'value': 'generate'}], id='data_source',
+                                inputStyle={"margin-right": "5px", "margin-left": "20px"})], width=4),
+        dbc.Col([dcc.Upload(id='upload_data', multiple=False,
+                            children=html.Div(['Click here to upload data']),
+                            style={'width': '100%', 'height': '30px', 'lineHeight': '30px', 'borderWidth': '1px',
+                                   'borderStyle': 'dashed', 'borderRadius': '5px', 'textAlign': 'center',
+                                   'margin': '1px'})], width=3),
+        dbc.Col([html.Div(id='output-data-upload')], width=4),
+        dbc.Col(html.Div(''), width=4),
+        dbc.Col([html.Div('Select column to inspect for anomalies')], width=4),
+        dbc.Col([html.Div(id='data-columns')], width=4)
+
     ]),
 
     html.Hr(),
@@ -115,17 +113,40 @@ app.layout = dbc.Container([
         ], width=2),
     ], className='h-10'),
 
+    html.Div(hidden=True, id='uploaded_data_div')
+
 ], style={"height": "100vh"})
 
 
-@app.callback(Output('output-data-upload', 'children'), Input('upload_data', 'contents'),
+@app.callback(Output('data-columns', 'children'), Input('uploaded_data_div', 'children'))
+def populate_column_selection(selected_data):
+    df = pd.read_json(selected_data)
+    if len(df.columns) > 0:
+        options = [{'label': col, 'value': col} for col in df.columns]
+        return dcc.Dropdown(options=options, value=df.columns[0])
+    return dcc.Dropdown()
+
+
+@app.callback(Output('uploaded_data_div', 'children'), Input('upload_data', 'contents'),
               State('upload_data', 'filename'))
-def insert_chosen_filename_in_upload_box(upload_contents, file_name):
+def insert_chosen_filename_under_upload_box(upload_contents, file_name):
     if upload_contents is None:
-        return 'No file selected'
+        return pd.DataFrame().to_json()
     content_type, content_string = upload_contents.split(',')
     decoded = base64.b64decode(content_string)
-    return 'hello'
+    if 'parquet' in file_name:
+        return pd.read_parquet(io.BytesIO(decoded)).to_json()
+    if 'csv' in file_name:
+        return pd.read_csv(io.StringIO(decoded.decode('utf-8'))).to_json()
+    return 'Error: file could not be read'
+
+
+@app.callback(Output('output-data-upload', 'children'),
+              Input('upload_data', 'filename'))
+def insert_chosen_filename_under_upload_box(file_name):
+    if file_name is None:
+        return 'No file selected'
+    return 'Selected file name: ' + file_name
 
 
 @app.callback(Output('data_graph', 'figure'),
