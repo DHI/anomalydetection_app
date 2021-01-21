@@ -155,22 +155,28 @@ def update_normal_noise_graph(time_point_noise_probability, noise_factor, n_clic
     if list_contains_value_in_dict(ctx.triggered, 'prop_id', 'normal_noise_div.n_clicks'):
         return switch_background_color(current_figure)
     noise = normal_noise_per_time_point(noise_factor, noise_xs, time_point_noise_probability)
-
     return noise_plot_selected_color(n_clicks, noise)
 
 
 @app.callback(Output('exp_noise_graph', 'figure'),
-              [Input('noise_probability', 'value'), Input('exp_noise_div', 'n_clicks')])
-def update_exp_noise_graph(time_point_noise_probability, n_clicks):
+              [Input('noise_probability', 'value'), Input('exp_noise_div', 'n_clicks')],
+              State('exp_noise_graph', 'figure'))
+def update_exp_noise_graph(time_point_noise_probability, n_clicks, current_figure):
+    ctx = dash.callback_context
+    if list_contains_value_in_dict(ctx.triggered, 'prop_id', 'exp_noise_div.n_clicks'):
+        return switch_background_color(current_figure)
     noise = exponentially_distributed_noise(noise_xs, time_point_noise_probability)
     return noise_plot_selected_color(n_clicks, noise)
 
 
 @app.callback(Output('exp_cluster_noise_graph', 'figure'),
-              [Input('noise_probability', 'value'), Input('exp_cluster_noise_div', 'n_clicks')])
-def update_exp_cluster_noise_graph(time_point_noise_probability, n_clicks):
+              [Input('noise_probability', 'value'), Input('exp_cluster_noise_div', 'n_clicks')],
+              State('exp_cluster_noise_graph', 'figure'))
+def update_exp_cluster_noise_graph(time_point_noise_probability, n_clicks, current_figure):
+    ctx = dash.callback_context
+    if list_contains_value_in_dict(ctx.triggered, 'prop_id', 'exp_cluster_noise_div.n_clicks'):
+        return switch_background_color(current_figure)
     noise = exponentially_distributed_cluster_noise(noise_xs, time_point_noise_probability)
-
     return noise_plot_selected_color(n_clicks, noise)
 
 
