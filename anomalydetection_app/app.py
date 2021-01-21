@@ -27,6 +27,17 @@ app = dash.Dash('app', server=server, external_stylesheets=[dbc.themes.BOOTSTRAP
 
 app.layout = dbc.Container([
     dbc.Row([html.H1('Experiment with anomaly detection')]),
+    html.Hr(),
+
+    dbc.Row([
+        dbc.Col([
+            html.H2('Choose whether you want to simulate data or upload your own'),
+            dcc.RadioItems(options=[{'label': 'Upload data', 'value': 'upload'},
+                                    {'label': 'Generate data', 'value': 'generate'}], id='data_source',
+                           inputStyle={"margin-right": "5px", "margin-left": "20px"}),
+            dcc.Upload(id='upload_data')
+        ])
+    ]),
 
     dbc.Row([
         dbc.Col([html.H3('Choose underlying data pattern')], width=6),
@@ -36,10 +47,10 @@ app.layout = dbc.Container([
             html.Br(),
             html.Div(dcc.Graph(id='linear_graph', config={'staticPlot': True}), id='linear_div'),
             html.Br(),
-            html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div')
+            html.Div()
         ], width=2),
         dbc.Col([
-            html.Div(),
+            html.Div(dcc.Graph(id='sin_cos_graph', config={'staticPlot': True}), id='sin_cos_div'),
             html.Br(),
             html.Div(),
             html.Br(),
@@ -79,7 +90,14 @@ app.layout = dbc.Container([
             html.Div([dcc.Graph(id='exp_cluster_noise_graph', config={'staticPlot': True})],
                      id='exp_cluster_noise_div'),
             html.Br(),
-            html.Div([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], id='normal_noise_div')
+            html.Div()
+        ], width=2),
+        dbc.Col([
+            html.Div([dcc.Graph(id='normal_noise_graph', config={'staticPlot': True})], id='normal_noise_div'),
+            html.Br(),
+            html.Div(),
+            html.Br(),
+            html.Div()
         ], width=2),
     ], className='h-10'),
 
