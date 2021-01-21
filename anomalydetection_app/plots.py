@@ -47,4 +47,4 @@ def normalize(data):
     data = (data - np.min(data))
     divide_value = np.max([np.max(data), 1e-9])/2
     data = data/divide_value
-    return data - 1
+    return data - np.max(data)/2
