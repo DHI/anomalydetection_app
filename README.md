@@ -54,25 +54,46 @@ First, make sure you have the code locally. There are different ways to download
    ```sh
    git clone https://github.com/DHI/anomalydetection_app.git
    ```
- * Or download az zip file using the "Code" button on https://github.com/DHI/anomalydetection_app
+ * Or download a zip file using the "Code" button on https://github.com/DHI/anomalydetection_app
 
 ### Installation
 You can either install this project as a package using Poetry, or install the requirements.
 
+Installing in a virtual environment is recommended and avoids conflicts between dependencies
+in different projects. To create and activate a virtual environment, do the following:
+
+1. Create a virtual environment named 'env': \
+`python -m venv env`
+
+2. Activate the virtual environment: \
+`env\Scripts\activate`
+
+If you choose not to install in a virtual environment, you can skip these steps.
+
 #### Install project as package
+This project uses Poetry for package management (see https://github.com/sdispater/poetry for more information). 
+To install using Poetry, follow these steps:
+
+1. Install Poetry: \
+`curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python` \
+
+2. In the command prompt, navigate to the root of this project (the folder where this README.md file is located)
+
+3. Install the packages with specified versions defined in poetry.lock from the command prompt with: \
+`poetry install`
 
 #### Install project requirements
+Install the requirements defined in requirements.txt with:
+`pip install -r requirements.txt`
 
 
 ### Running app
-To run app, do the following:
+To run this app, do the following:
 
-1. In the command prompt, navigate to the folder where app.py is located
+1. In the command prompt, navigate to the folder where app.py is located.
 2. Run the following from the command line:
 `python app.py`
-
-## Usage
-
+3. The app will open in a browser.
 
 
 ## Roadmap
