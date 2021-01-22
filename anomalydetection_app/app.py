@@ -1,13 +1,10 @@
-import io
-
 import dash
+from anomalydetection_app.fileio import columns_from_octet_stream
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 from plotly import graph_objects as go
-
-import base64
 
 import flask
 import pandas as pd
@@ -113,27 +110,17 @@ app.layout = dbc.Container([
         ], width=2),
     ], className='h-10'),
 
-    html.Div(hidden=True, id='uploaded_data_div')
-
 ], style={"height": "100vh"})
 
 
-@app.callback([Output('uploaded_data_div', 'children'), Output('data-columns', 'options')],
+@app.callback(Output('data-columns', 'options'),
               Input('upload_data', 'contents'), State('upload_data', 'filename'))
-def insert_chosen_filename_under_upload_box(upload_contents, file_name):
+def load_data(upload_contents, file_name):
     if upload_contents is None:
-        return pd.DataFrame().to_json(), []
+        return []
     content_type, content_string = upload_contents.split(',')
-    decoded = base64.b64decode(content_string)
-    df = pd.DataFrame()
-    options = []
-    if 'parquet' in file_name:
-        df = pd.read_parquet(io.BytesIO(decoded))
-    if 'csv' in file_name:
-        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-    if len(df.columns) > 0:
-        options = [{'label': col, 'value': col} for col in df.columns]
-    return df.to_json(), options
+    options = columns_from_octet_stream(content_string, file_name)
+    return options
 
 
 @app.callback(Output('output-data-upload', 'children'), Input('upload_data', 'filename'))
@@ -149,13 +136,12 @@ def insert_chosen_filename_under_upload_box(file_name):
                Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
                Input('noise_factor', 'value'), Input('detectors_checklist', 'value'),
                Input('data_source', 'value')],
-              Input('uploaded_data_div', 'children'), Input('data-columns', 'value'), State('data_graph', 'figure'))
+              Input('data-columns', 'value'), State('data_graph', 'figure'))
 def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
                 exp_noise_clicks, exp_cluster_noise_clicks,
                 normal_noise_clicks, time_point_noise_probability,
                 noise_factor, detector_selection,
-                data_source,
-                data_as_json, column_to_plot, current_figure):
+                data_source, column_to_plot, current_figure):
     ctx = dash.callback_context
     detector_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'detectors_checklist.value')
     column_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'data-columns.value')
@@ -172,7 +158,8 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
                 data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor,
                                          normal_noise_clicks, time_point_noise_probability)
         else:
-            data = pd.read_json(data_as_json)[column_to_plot]
+            #data = pd.read_json(data_as_json)[column_to_plot]
+            data = 2
             data_label = 'Uploaded data'
     else:
         data = current_figure['data'][0]['y']
