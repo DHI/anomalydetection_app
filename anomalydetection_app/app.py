@@ -1,5 +1,5 @@
 import dash
-from anomalydetection_app.fileio import columns_from_octet_stream
+from anomalydetection_app.fileio import columns_from_octet_stream, read_column_from_octet_stream
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
@@ -135,13 +135,14 @@ def insert_chosen_filename_under_upload_box(file_name):
                Input('exp_noise_div', 'n_clicks'), Input('exp_cluster_noise_div', 'n_clicks'),
                Input('normal_noise_div', 'n_clicks'), Input('noise_probability', 'value'),
                Input('noise_factor', 'value'), Input('detectors_checklist', 'value'),
-               Input('data_source', 'value')],
-              Input('data-columns', 'value'), State('data_graph', 'figure'))
+               Input('data_source', 'value'), Input('data-columns', 'value'), Input('upload_data', 'contents'),
+               Input('upload_data', 'filename')], State('data_graph', 'figure'))
 def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
                 exp_noise_clicks, exp_cluster_noise_clicks,
                 normal_noise_clicks, time_point_noise_probability,
                 noise_factor, detector_selection,
-                data_source, column_to_plot, current_figure):
+                data_source, column_to_plot, upload_contents,
+                file_name, current_figure):
     ctx = dash.callback_context
     detector_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'detectors_checklist.value')
     column_selection_triggered = list_contains_value_in_dict(ctx.triggered, 'prop_id', 'data-columns.value')
@@ -150,7 +151,7 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
     use_generated_data = (data_source == 'generate') or (column_to_plot is None)
     if not detector_selection_triggered:
         if use_generated_data:
-            if column_selection_triggered:
+            if column_selection_triggered and (current_figure is not None):
                 data = current_figure['data'][0]['y']
             else:
                 data = simulate_data_pattern(xs, linear_clicks, sin_clicks, sin_cos_clicks)
@@ -158,8 +159,8 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
                 data = add_noise_to_data(data, exp_cluster_noise_clicks, exp_noise_clicks, noise_factor,
                                          normal_noise_clicks, time_point_noise_probability)
         else:
-            #data = pd.read_json(data_as_json)[column_to_plot]
-            data = 2
+            content_type, content_string = upload_contents.split(',')
+            data = read_column_from_octet_stream(content_string, file_name, column_to_plot).to_numpy()
             data_label = 'Uploaded data'
     else:
         data = current_figure['data'][0]['y']

@@ -5,6 +5,15 @@ import pandas as pd
 from pyarrow import parquet as pa_parquet
 
 
+def read_column_from_octet_stream(content_string, file_name, column):
+    decoded = base64.b64decode(content_string)
+    if '.parquet' in file_name:
+        return pd.read_parquet(io.BytesIO(decoded), columns=[column])[column]
+    if '.csv' in file_name:
+        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        return df[column]
+
+
 def columns_from_octet_stream(content_string, file_name):
     decoded = base64.b64decode(content_string)
     options = []
