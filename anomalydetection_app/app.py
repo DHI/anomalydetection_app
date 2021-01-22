@@ -167,6 +167,8 @@ def update_data(sin_clicks, sin_cos_clicks, linear_clicks,
 
     figure_definition = normal_plot(data)
     figure_definition['data'][0]['name'] = data_label
+    if len(data) > 400000:
+        figure_definition['data'][0]['type'] = 'scattergl'
     fig = go.Figure(figure_definition)
     fig.update_layout(legend=dict(yanchor="bottom", y=1.05, xanchor="left", x=0.01))
 
